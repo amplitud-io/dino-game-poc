@@ -32,6 +32,13 @@ let game_speed = null;
 let step_velocity = new Velocity(0, -0.1);
 let cumulative_velocity = null;
 let current_theme = null;
+let level_colors = {
+    1: '#ffba08',
+    2: '#f48c06', 
+    3: '#e85d04', 
+    4: '#dc2f02', 
+    5: '#6a040f', 
+}
 
 let harmless_characters_pool = null;
 let harmfull_characters_pool = null;
@@ -89,6 +96,19 @@ let harmfull_character_allocator = [
 
 const SPEED_STEP = -1;
 
+function get_game_level(score) {
+    if (score >= 500) {
+       return 5;
+    } else if (score >= 250) {
+        return 4;
+    } else if (score >= 100) {
+        return 3;
+    } else if (score >= 50) {
+        return 2;
+    } else {
+        return 1;
+    }
+}
 function initialize() {
     current_theme = themes.classic;
     //   cumulative_velocity = new Velocity(0, 0);
@@ -96,6 +116,7 @@ function initialize() {
     game_score = 0;
     game_hi_score = localStorage.getItem("project.github.chrome_dino.high_score") || 0;
     game_speed = Math.max(0, Math.floor(game_hi_score / 100)) + 1;
+    game_level = get_game_level(game_hi_score);
     cumulative_velocity = new Velocity(0, SPEED_STEP * game_speed);
 
     canvas.height = ROWS;
@@ -138,7 +159,7 @@ function paint_layout(character_layout, character_position) {
             if (current_theme.layout[character_layout[j][k]]) {
                 if (character_layout === dino_layout.stand || character_layout === dino_layout.jump || character_layout === dino_layout.run[0] || character_layout === dino_layout.run[1] || character_layout === dino_layout.dead) {
                     if (character_layout[j][k] === 2) {
-                        canvas_ctx.fillStyle = 'red';
+                        canvas_ctx.fillStyle = level_colors[game_level];
 
                     } else {
                         canvas_ctx.fillStyle = current_theme.layout[character_layout[j][k]];
@@ -162,18 +183,22 @@ function event_loop() {
         game_score_step -= 1;
         game_score++;
 
-        game_speed = Math.max(0, Math.floor(Math.max(game_score, game_hi_score) / 100)) + 1;
+        let max = Math.max(game_score, game_hi_score);
 
+        game_speed = Math.max(0, Math.floor(max / 100)) + 1;
+        game_level = get_game_level(max);
+
+        
         // increase velocity
         cumulative_velocity = new Velocity(0, SPEED_STEP * game_speed);
 
-        if (game_score != 0 && game_score % 300 == 0) {
-            if (current_theme.id == 1) {
-                current_theme = themes.dark;
-            } else {
-                current_theme = themes.classic;
-            }
-        }
+        // if (game_score != 0 && game_score % 300 == 0) {
+        //     if (current_theme.id == 1) {
+        //         current_theme = themes.dark;
+        //     } else {
+        //         current_theme = themes.classic;
+        //     }
+        // }
 
     }
 
@@ -198,7 +223,7 @@ function event_loop() {
     // score card update
     canvas_ctx.font = "20px Arcade";
     canvas_ctx.fillStyle = current_theme.score_text;
-    canvas_ctx.fillText(`L E V E L    ${cumulative_velocity.get()[1].toString().split('').join(" ")} `, canvas.width - 200, 40);
+    canvas_ctx.fillText(`L E V E L    ${game_level.toString().split('').join(" ")} `, canvas.width - 200, 40);
 
     // score card update
     canvas_ctx.font = "20px Arcade";
