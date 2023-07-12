@@ -938,7 +938,7 @@ function event_loop() {
 
                         let attrs = [];
                         attrs[0] = [0, String(game_level)];
-                        attrs[1] = [1, String(game_level)];
+                        attrs[1] = [1, String(game_level-1)];
                         attrs[2] = [2, String(game_score)];
                         attrs[3] = [3, String(game_level)];
                         attrs[4] = [4, String(game_speed)];
