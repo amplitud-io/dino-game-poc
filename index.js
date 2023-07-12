@@ -1064,9 +1064,8 @@ async function main() {
                 console.log(err);
                 $("#container").html("<h1 class='text-danger text-center'>There was an unexpected error.<br/>Please refresh and try again.</h1>");
             }
-
         }
-
+ 
 
     } else {
        $("#container").html("<h1>Please install Metamask!</h1>").show();
