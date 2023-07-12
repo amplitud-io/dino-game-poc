@@ -1022,7 +1022,7 @@ async function main() {
                 wallet = accounts[0];
 
             } catch (err) {
-                $("#container").html("<h1>Please connect your wallet!</h1>");
+                $("#container").html("<h1>Please connect your wallet!</h1>").show();
                 return;
             }
 
@@ -1069,7 +1069,7 @@ async function main() {
 
 
     } else {
-        document.getElementById("container").innerHTML = "<h1>Please install Metamask!</h1>";
+       $("#container").html("<h1>Please install Metamask!</h1>").show();
     }
 
 
