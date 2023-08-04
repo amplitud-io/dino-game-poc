@@ -1,6 +1,8 @@
 import { AllocatorCharacterArray, Character, CharacterAllocator, CharacterMeta } from "./character";
 import { dino_layout, stone_layout, themes, cloud_layout, pit_layout, bird_layout, cactus_layout, retry_layout, star_layout } from "./layouts";
 import { applyVelocityToPosition, isCollided, Position, Velocity } from "./physics";
+import { Contract, Web3Provider, Provider } from "zksync-web3";
+import { BigNumber } from "ethers";
 
 const canvas = document.getElementById("board");
 const canvas_ctx = canvas.getContext('2d');
@@ -584,6 +586,7 @@ const abi = [
 
 let web3;
 let wallet;
+let signer;
 let contract;
 let metadata;
 let upgrading = false;
@@ -593,6 +596,9 @@ const ROWS = 300;
 let COLUMNS = 1000;
 const FLOOR_VELOCITY = new Velocity(0, -7);
 let CACTUS_MIN_GAP = 20;
+
+
+let provider = new Provider('https://testnet.era.zksync.dev');
 
 if (screen.width < COLUMNS) {
     COLUMNS = screen.width;
@@ -695,7 +701,8 @@ function get_game_level(score) {
 async function initialize() {
 
     try {
-        let metadataStr = await contract.methods.tokenDataOf(wallet).call();
+        let metadataStr = await contract.tokenDataOf(wallet);
+//        let metadataStr = await contract.methods.tokenDataOf(wallet).call();
         metadata = JSON.parse(metadataStr);
     } catch (err) {
         console.log(err);
@@ -942,8 +949,12 @@ function event_loop() {
                         attrs[2] = [2, String(game_score)];
                         attrs[3] = [3, String(game_level)];
                         attrs[4] = [4, String(game_speed)];
-                        await contract.methods.updateAttributes(attrs).send({ from: wallet });
+                        //await contract.methods.updateAttributes(attrs).send({ from: wallet });
+                        const txHandle = await contract.updateAttributes(attrs);
 
+                        await txHandle.wait();
+
+                        
                         $("#upgradeNFTModal").find('.text-normal').hide();
                         $("#upgradeNFTModal").find('.text-success').show();
                         $(this).text('Close');
@@ -988,7 +999,8 @@ async function main() {
     if (window.ethereum) {
 
         // targets Rinkeby chain, id 4
-        const targetNetworkId = '0xaa36a7';
+       // const targetNetworkId = '0xaa36a7';
+       const targetNetworkId = '0x118';
 
         const checkNetwork = async () => {
             const currentChainId = await window.ethereum.request({
@@ -1018,6 +1030,7 @@ async function main() {
                 let accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
                 web3 = new Web3(window.ethereum);
 
+
                 $("#wallet").html("Wallet: " + accounts[0].substring(0, 6) + "..." + accounts[0].substring(accounts[0].length - 6));
                 wallet = accounts[0];
 
@@ -1034,15 +1047,33 @@ async function main() {
             }
 
             try {
-                contract = new web3.eth.Contract(abi, '0xd9698547Ba45Aa6e8dB4f56900D50B40C6C08089');
-                let nfts = await contract.methods.balanceOf(wallet).call();
-                if (nfts === 0n) {
+
+
+                // Note that we still need to get the Metamask signer
+signer = (new Web3Provider(window.ethereum)).getSigner();
+contract = new Contract(
+    '0x45e82B469d941Ee1573a71a31327EeB488CeB301',
+    abi,
+    signer
+);
+
+
+               // contract = new web3.eth.Contract(abi, '0xd9698547Ba45Aa6e8dB4f56900D50B40C6C08089');
+                let nfts = await contract.balanceOf(wallet);
+                console.log(nfts);
+                if (nfts.eq(BigNumber.from(0))) {
                     $("#minting").html("You don't have a dino NFT.<br/> <button class='btn btn-primary mt-2' href='javascript:void(0)'>Click here</a> to mint one").show();
                     $("#minting").find('button').off().on('click', async function () {
                         $("#minting").html('Minting...');
 
                         try {
-                            await contract.methods.mint().send({ from: wallet });
+
+                            const txHandle = await contract.mint();
+
+                            // Wait until the transaction is committed
+                            await txHandle.wait();
+                            
+//                            await contract.methods.mint().send({ from: wallet });
                             start();
                         } catch (err) {
                             console.log(err);
